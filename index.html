@@ -1,14 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistema de Envio</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Envio em Massa - Sistema de Mensagens!!!</title>
@@ -82,92 +74,5 @@
 
   <!-- Script -->
   <script src="assets/script.js" defer></script>
-</body>
-</html>
-
-      margin: 20px;
-    }
-    #textEditor {
-      border: 1px solid #ccc;
-      padding: 10px;
-      min-height: 80px;
-      margin-bottom: 10px;
-    }
-    #charCount {
-      font-weight: bold;
-    }
-    button {
-      margin: 5px;
-      padding: 8px 12px;
-      cursor: pointer;
-    }
-    #imagePreview {
-      margin-top: 10px;
-    }
-    #previewImg {
-      max-width: 150px;
-      border: 1px solid #ddd;
-      padding: 5px;
-    }
-    /* Toast */
-    .toast {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 15px;
-      border-radius: 5px;
-      margin-top: 10px;
-      color: #fff;
-      animation: fadeIn 0.3s;
-    }
-    .toast.success { background-color: #28a745; }
-    .toast.error { background-color: #dc3545; }
-    .toast.warning { background-color: #ffc107; color: #000; }
-    .toast-icon { font-size: 18px; }
-    .toast-content { flex: 1; }
-    .toast-title { font-weight: bold; }
-    .toast-close {
-      background: none;
-      border: none;
-      color: inherit;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    #toastContainer {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      max-width: 300px;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  </style>
-</head>
-<body>
-  <h1>📤 Envio em Massa</h1>
-  <p>Escreva sua mensagem e selecione até 4 imagens</p>
-
-  <!-- Editor de texto -->
-  <div id="textEditor" contenteditable="true"></div>
-  <div>Caracteres: <span id="charCount">0</span></div>
-
-  <!-- Botões -->
-  <button id="clearBtn">Limpar</button>
-  <button id="sendBtn">Enviar</button>
-  <button id="uploadBtn">Abrir Planilha</button>
-
-  <!-- Upload de múltiplas imagens -->
-  <input type="file" id="imageInput" accept="image/*" multiple>
-  <div id="imagePreview" style="display:none">
-    <img id="previewImg">
-  </div>
-
-  <!-- Toasts -->
-  <div id="toastContainer"></div>
-
-  <!-- Importa o scripddt -->
-  <script src="script.js"></script>
 </body>
 </html>
