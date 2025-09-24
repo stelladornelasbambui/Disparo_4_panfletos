@@ -87,7 +87,7 @@ async function sendWebhook() {
     const apiUrl = "https://webhook.fiqon.app/webhook/9fd68837-4f32-4ee3-a756-418a87beadc9/79c39a2c-225f-4143-9ca4-0d70fa92ee12";
 
     try {
-        // 1️⃣ Envia texto se existir
+        // 1️⃣ Envia o texto apenas uma vez
         if (message) {
             const payloadText = { message, timestamp: Date.now() };
             await fetch(apiUrl, {
@@ -97,11 +97,11 @@ async function sendWebhook() {
             });
         }
 
-        // 2️⃣ Envia até 4 imagens
+        // 2️⃣ Envia cada imagem SEM mensagem
         for (const file of _selectedImageFiles) {
             const imageUrl = await uploadToImgbb(file);
             const payloadImg = {
-                message: "", // não duplica o texto
+                message: "", // não repete texto
                 timestamp: Date.now(),
                 media: {
                     url: imageUrl,
