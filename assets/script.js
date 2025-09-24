@@ -17,7 +17,7 @@ const elements = {
 
 // ================== ESTADO ==================
 let state = { isSending: false };
-let _selectedImageFiles = []; // array para armazenar múltiplas imagens
+let _selectedImageFiles = []; // array com as imagens selecionadas
 
 // ================== INIT ==================
 document.addEventListener('DOMContentLoaded', () => {
@@ -37,10 +37,10 @@ function initializeEventListeners() {
         showToast('Sucesso', 'Abrindo planilha do Google Sheets...', 'success');
     });
 
-    // 👉 Detectar teclas para formatação rápida
+    // 👉 Atalhos de formatação (Ctrl+N/S/I)
     elements.textEditor.addEventListener('keydown', handleFormatting);
 
-    // 👉 Input de múltiplas imagens
+    // 👉 Input de imagens múltiplas
     const imageInputEl = document.getElementById('imageInput');
     if (imageInputEl) {
         imageInputEl.addEventListener('change', handleImagesSelectedForImgBB);
@@ -93,39 +93,38 @@ async function sendWebhook() {
     const apiUrl = "https://webhook.fiqon.app/webhook/9fd68837-4f32-4ee3-a756-418a87beadc9/79c39a2c-225f-4143-9ca4-0d70fa92ee12";
 
     try {
-        // 1️⃣ Envia o texto (uma vez só)
-        if (message) {
-            const textPayload = { message, timestamp: Date.now() };
-            await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(textPayload)
-            });
-            showToast('Sucesso', 'Texto enviado com sucesso!', 'success');
+        // Faz upload das imagens e cria variáveis fixas image1..image4
+        let images = {};
+        for (let i = 0; i < Math.min(_selectedImageFiles.length, 4); i++) {
+            const file = _selectedImageFiles[i];
+            const url = await uploadToImgbb(file);
+            images[`image${i+1}`] = url;
         }
 
-        // 2️⃣ Envia cada imagem em sequência
-        for (let file of _selectedImageFiles) {
-            const imageUrl = await uploadToImgbb(file);
+        // Monta o payload final
+        const payload = {
+            message: message,
+            timestamp: Date.now(),
+            ...images
+        };
 
-            const imagePayload = {
-                timestamp: Date.now(),
-                media: { url: imageUrl, filename: file.name }
-            };
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
 
-            await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(imagePayload)
-            });
+        const text = await response.text();
+        console.log("Resposta do Webhook:", text);
+
+        if (!response.ok) {
+            throw new Error(`Erro HTTP ${response.status} - ${text}`);
         }
 
-        if (_selectedImageFiles.length > 0) {
-            showToast('Sucesso', `${_selectedImageFiles.length} imagem(ns) enviada(s)!`, 'success');
-        }
-    } catch (err) {
-        console.error("Erro envio:", err);
-        showToast('Erro', 'Falha no envio', 'error');
+        showToast('Sucesso', 'Mensagem e imagens enviadas com sucesso!', 'success');
+    } catch (error) {
+        console.error('Erro ao acionar webhook:', error);
+        showToast('Erro', 'Falha ao acionar webhook', 'error');
     } finally {
         state.isSending = false;
         elements.sendBtn.disabled = false;
@@ -162,7 +161,7 @@ function handleImagesSelectedForImgBB(e) {
 
     _selectedImageFiles = Array.from(files);
 
-    // mostra preview da primeira imagem
+    // preview da primeira imagem
     const reader = new FileReader();
     reader.onload = (ev) => {
         document.getElementById('previewImg').src = ev.target.result;
