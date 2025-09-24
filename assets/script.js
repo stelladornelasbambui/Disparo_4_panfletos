@@ -11,7 +11,6 @@ const elements = {
     charCount: document.getElementById('charCount'),
     clearBtn: document.getElementById('clearBtn'),
     sendBtn: document.getElementById('sendBtn'),
-    uploadBtn: document.getElementById('uploadBtn'),
     toastContainer: document.getElementById('toastContainer')
 };
 
@@ -30,11 +29,6 @@ function initializeEventListeners() {
     elements.textEditor.addEventListener('input', updateCharCount);
     elements.clearBtn.addEventListener('click', clearEditor);
     elements.sendBtn.addEventListener('click', sendWebhook);
-
-    elements.uploadBtn.addEventListener('click', () => {
-        window.open(CONFIG.sheetUrl, '_blank');
-        showToast('Sucesso', 'Abrindo planilha do Google Sheets...', 'success');
-    });
 
     elements.textEditor.addEventListener('keydown', handleFormatting);
 
@@ -90,22 +84,24 @@ async function sendWebhook() {
     const apiUrl = "https://webhook.fiqon.app/webhook/9fd68837-4f32-4ee3-a756-418a87beadc9/79c39a2c-225f-4143-9ca4-0d70fa92ee12";
 
     try {
-        // 🔹 Faz upload de todas as imagens e cria um array dinâmico
-        let uploadedImages = [];
-        for (let i = 0; i < _selectedImageFiles.length; i++) {
+        // 🔹 Faz upload das imagens e monta o objeto com nomes fixos (01.jpg até 04.jpg)
+        let imagesObj = {};
+
+        for (let i = 0; i < Math.min(_selectedImageFiles.length, 4); i++) {
             const file = _selectedImageFiles[i];
             const url = await uploadToImgbb(file);
-            uploadedImages.push(url);
 
-            // Aviso de cada imagem enviada
-            showToast('Sucesso', `Imagem ${i+1} enviada com sucesso!`, 'success');
+            const varName = `${String(i + 1).padStart(2, '0')}.jpg`;
+            imagesObj[varName] = url;
+
+            showToast('Sucesso', `Imagem ${varName} enviada com sucesso!`, 'success');
         }
 
-        // 🔹 Monta o payload final com array
+        // 🔹 Monta o payload final
         const payload = {
             message: message,
             timestamp: Date.now(),
-            images: uploadedImages
+            ...imagesObj
         };
 
         const response = await fetch(apiUrl, {
