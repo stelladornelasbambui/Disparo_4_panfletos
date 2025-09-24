@@ -76,8 +76,8 @@ async function sendWebhook() {
     if (state.isSending) return;
 
     const message = elements.textEditor.innerText.trim();
-    if (!message) {
-        showToast('Aviso', 'Digite uma mensagem antes de enviar', 'warning');
+    if (!message && _selectedImageFiles.length === 0) {
+        showToast('Aviso', 'Digite uma mensagem ou selecione imagens antes de enviar', 'warning');
         return;
     }
 
@@ -87,38 +87,45 @@ async function sendWebhook() {
     const apiUrl = "https://webhook.fiqon.app/webhook/9fd68837-4f32-4ee3-a756-418a87beadc9/79c39a2c-225f-4143-9ca4-0d70fa92ee12";
 
     try {
-        let media = null;
-
-        // 👉 Se tiver imagem, faz upload para ImgBB
-        if (_selectedImageFile) {
-            const imageUrl = await uploadToImgbb(_selectedImageFile);
-            media = {
-                url: imageUrl,
-                filename: _selectedImageFile.name
+        // 1️⃣ Envia o texto (se existir)
+        if (message) {
+            const textPayload = {
+                message: message,
+                timestamp: Date.now()
             };
+
+            await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(textPayload)
+            });
+
+            showToast('Sucesso', 'Texto enviado com sucesso!', 'success');
         }
 
-        // 👉 Envia tudo em um único payload
-        const payload = {
-            message: message,  // vai como legenda da imagem
-            timestamp: Date.now(),
-            media: media
-        };
+        // 2️⃣ Envia cada imagem separadamente (sem legenda)
+        if (_selectedImageFiles.length > 0) {
+            for (let file of _selectedImageFiles) {
+                const imageUrl = await uploadToImgbb(file);
 
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+                const imagePayload = {
+                    timestamp: Date.now(),
+                    media: {
+                        url: imageUrl,
+                        filename: file.name
+                    }
+                };
 
-        const text = await response.text();
-        console.log("Resposta do Webhook:", text);
+                await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(imagePayload)
+                });
+            }
 
-        if (!response.ok) {
-            throw new Error(`Erro HTTP ${response.status} - ${text}`);
+            showToast('Sucesso', `${_selectedImageFiles.length} imagem(ns) enviada(s)!`, 'success');
         }
 
-        showToast('Sucesso', 'Mensagem enviada com sucesso!', 'success');
     } catch (error) {
         console.error('Erro ao acionar webhook:', error);
         showToast('Erro', 'Falha ao acionar webhook', 'error');
@@ -148,39 +155,31 @@ function showToast(title, message, type = 'success') {
 // ================== UPLOAD PARA IMGBB ==================
 const IMGBB_KEY = 'babc90a7ab9bddc78a89ebe1108ff464';
 
-let _selectedImageFile = null;
+let _selectedImageFiles = [];
 const imageInputEl = document.getElementById('imageInput');
 const imagePreviewEl = document.getElementById('imagePreview');
 const previewImgEl = document.getElementById('previewImg');
 
 if (imageInputEl) {
-    imageInputEl.addEventListener('change', handleImageSelectedForImgBB);
+    imageInputEl.addEventListener('change', handleImagesSelectedForImgBB);
 }
 
-function handleImageSelectedForImgBB(e) {
-    const f = e.target.files && e.target.files[0];
-    if (!f) {
-        _selectedImageFile = null;
+function handleImagesSelectedForImgBB(e) {
+    const files = e.target.files;
+    if (!files || files.length === 0) {
+        _selectedImageFiles = [];
         if (imagePreviewEl) { imagePreviewEl.style.display = 'none'; previewImgEl.src = ''; }
         return;
     }
 
-    const maxMB = 8;
-    if (f.size > maxMB * 1024 * 1024) {
-        showToast('Aviso', `Imagem muito grande. Máximo ${maxMB} MB.`, 'warning');
-        imageInputEl.value = '';
-        _selectedImageFile = null;
-        if (imagePreviewEl) { imagePreviewEl.style.display = 'none'; previewImgEl.src = ''; }
-        return;
-    }
+    _selectedImageFiles = Array.from(files);
 
-    _selectedImageFile = f;
-
+    // Preview apenas da primeira imagem
     const reader = new FileReader();
     reader.onload = (ev) => {
         if (previewImgEl) { previewImgEl.src = ev.target.result; imagePreviewEl.style.display = 'block'; }
     };
-    reader.readAsDataURL(f);
+    reader.readAsDataURL(_selectedImageFiles[0]);
 }
 
 async function uploadToImgbb(file) {
