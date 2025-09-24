@@ -94,21 +94,24 @@ async function sendWebhook() {
                 timestamp: Date.now()
             };
 
-            await fetch(apiUrl, {
+            const textRes = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(textPayload)
             });
 
+            console.log("Resposta envio texto:", await textRes.text());
             showToast('Sucesso', 'Texto enviado com sucesso!', 'success');
         }
 
-        // 2️⃣ Envia cada imagem separadamente (sem legenda)
+        // 2️⃣ Envia cada imagem separadamente (sem legenda visível)
         if (_selectedImageFiles.length > 0) {
             for (let file of _selectedImageFiles) {
                 const imageUrl = await uploadToImgbb(file);
+                console.log("URL gerada no ImgBB:", imageUrl);
 
                 const imagePayload = {
+                    message: "", // obrigatório para compatibilidade com Z-API
                     timestamp: Date.now(),
                     media: {
                         url: imageUrl,
@@ -116,11 +119,18 @@ async function sendWebhook() {
                     }
                 };
 
-                await fetch(apiUrl, {
+                const imgRes = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(imagePayload)
                 });
+
+                const resText = await imgRes.text();
+                console.log("Resposta envio imagem:", resText);
+
+                if (!imgRes.ok) {
+                    throw new Error(`Erro HTTP ${imgRes.status} ao enviar imagem: ${resText}`);
+                }
             }
 
             showToast('Sucesso', `${_selectedImageFiles.length} imagem(ns) enviada(s)!`, 'success');
@@ -156,7 +166,7 @@ function showToast(title, message, type = 'success') {
 const IMGBB_KEY = 'babc90a7ab9bddc78a89ebe1108ff464';
 
 let _selectedImageFiles = [];
-const imageInputEl = document.getElementById('imageInput');
+const imageInputEl = document.getElementById('imageInput'); // precisa estar com multiple no HTML
 const imagePreviewEl = document.getElementById('imagePreview');
 const previewImgEl = document.getElementById('previewImg');
 
@@ -174,7 +184,7 @@ function handleImagesSelectedForImgBB(e) {
 
     _selectedImageFiles = Array.from(files);
 
-    // Preview apenas da primeira imagem
+    // Preview da primeira imagem
     const reader = new FileReader();
     reader.onload = (ev) => {
         if (previewImgEl) { previewImgEl.src = ev.target.result; imagePreviewEl.style.display = 'block'; }
