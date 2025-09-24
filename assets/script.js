@@ -104,14 +104,13 @@ async function sendWebhook() {
             showToast('Sucesso', 'Texto enviado com sucesso!', 'success');
         }
 
-        // 2️⃣ Envia cada imagem separadamente (sem legenda visível)
+        // 2️⃣ Envia cada imagem separadamente (sem message)
         if (_selectedImageFiles.length > 0) {
             for (let file of _selectedImageFiles) {
                 const imageUrl = await uploadToImgbb(file);
                 console.log("URL gerada no ImgBB:", imageUrl);
 
                 const imagePayload = {
-                    message: "", // obrigatório para compatibilidade com Z-API
                     timestamp: Date.now(),
                     media: {
                         url: imageUrl,
