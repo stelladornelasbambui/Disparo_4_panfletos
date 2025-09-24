@@ -93,10 +93,17 @@ async function sendWebhook() {
         // Faz upload das imagens (até 4)
         let images = { image1: null, image2: null, image3: null, image4: null };
 
+        if (message) {
+            showToast('Sucesso', 'Mensagem enviada com sucesso!', 'success');
+        }
+
         for (let i = 0; i < Math.min(_selectedImageFiles.length, 4); i++) {
             const file = _selectedImageFiles[i];
             const url = await uploadToImgbb(file);
             images[`image${i+1}`] = url;
+
+            // Aviso de cada imagem enviada
+            showToast('Sucesso', `Imagem ${i+1} enviada com sucesso!`, 'success');
         }
 
         // Monta o payload final
@@ -119,10 +126,10 @@ async function sendWebhook() {
             throw new Error(`Erro HTTP ${response.status} - ${text}`);
         }
 
-        showToast('Sucesso', 'Mensagem e imagens enviadas com sucesso!', 'success');
+        showToast('Finalizado', 'Texto e imagens processados com sucesso!', 'success');
     } catch (error) {
         console.error('Erro ao acionar webhook:', error);
-        showToast('Erro', 'Falha ao acionar webhook', 'error');
+        showToast('Erro', 'Falha ao enviar texto ou imagens', 'error');
     } finally {
         state.isSending = false;
         elements.sendBtn.disabled = false;
@@ -189,7 +196,10 @@ async function uploadToImgbb(file) {
 
     const res = await fetch('https://api.imgbb.com/1/upload', { method: 'POST', body: form });
     const json = await res.json();
-    if (!res.ok || !json.data) throw new Error('Falha upload ImgBB');
+    if (!res.ok || !json.data) {
+        showToast('Erro', `Falha upload da imagem ${file.name}`, 'error');
+        throw new Error('Falha upload ImgBB');
+    }
 
     return json.data.display_url;
 }
