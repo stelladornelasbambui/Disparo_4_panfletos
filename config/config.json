@@ -1,0 +1,23 @@
+{
+  "app": {
+    "name": "Sistema de Envio em Massa",
+    "version": "1.0.0",
+    "description": "Sistema para envio de mensagens em massa via webhook"
+  },
+  "googleSheets": {
+    "sheetId": "1nT_ccRwFtEWiYvh5s4iyIDTgOj5heLnXSixropbGL8s",
+    "sheetUrl": "https://docs.google.com/spreadsheets/d/1nT_ccRwFtEWiYvh5s4iyIDTgOj5heLnXSixropbGL8s/edit?gid=1933645899#gid=1933645899"
+  },
+  "webhook": {
+    "endpoint": "/api/send-webhook",
+    "method": "POST",
+    "timeout": 30000
+  },
+  "editor": {
+    "maxChars": 2000
+  },
+  "upload": {
+    "allowedTypes": [".xlsx", ".xls"],
+    "maxSize": "10MB"
+  }
+}
