@@ -12,21 +12,12 @@ const elements = {
     clearBtn: document.getElementById('clearBtn'),
     sendBtn: document.getElementById('sendBtn'),
     uploadBtn: document.getElementById('uploadBtn'),
-    toastContainer: document.getElementById('toastContainer'),
-    imageInputs: [
-        document.getElementById('imageInput1'),
-        document.getElementById('imageInput2'),
-        document.getElementById('imageInput3'),
-        document.getElementById('imageInput4')
-    ]
+    toastContainer: document.getElementById('toastContainer')
 };
 
 // ================== ESTADO ==================
-let state = {
-    isSending: false
-};
-
-let _imageFiles = [null, null, null, null]; // 4 variáveis para armazenar até 4 imagens
+let state = { isSending: false };
+let _selectedImageFiles = []; // array para armazenar múltiplas imagens
 
 // ================== INIT ==================
 document.addEventListener('DOMContentLoaded', () => {
@@ -34,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateCharCount();
 });
 
+// ================== EVENTOS ==================
 function initializeEventListeners() {
     elements.textEditor.addEventListener('input', updateCharCount);
     elements.clearBtn.addEventListener('click', clearEditor);
@@ -48,10 +40,11 @@ function initializeEventListeners() {
     // 👉 Detectar teclas para formatação rápida
     elements.textEditor.addEventListener('keydown', handleFormatting);
 
-    // 👉 Inputs de imagens (4 variáveis fixas)
-    elements.imageInputs.forEach((input, idx) => {
-        if (input) input.addEventListener('change', (e) => handleImageSelectedForImgBB(e, idx));
-    });
+    // 👉 Input de múltiplas imagens
+    const imageInputEl = document.getElementById('imageInput');
+    if (imageInputEl) {
+        imageInputEl.addEventListener('change', handleImagesSelectedForImgBB);
+    }
 }
 
 // ================== EDITOR ==================
@@ -70,7 +63,7 @@ function clearEditor() {
 
 // ================== FORMATAÇÃO ==================
 function handleFormatting(e) {
-    if (e.ctrlKey) { 
+    if (e.ctrlKey) {
         if (e.key.toLowerCase() === 'n') {
             document.execCommand('bold');
             e.preventDefault();
@@ -84,12 +77,12 @@ function handleFormatting(e) {
     }
 }
 
-// ================== ENVIO ==================
+// ================== ENVIO VIA WEBHOOK ==================
 async function sendWebhook() {
     if (state.isSending) return;
 
     const message = elements.textEditor.innerText.trim();
-    if (!message && _imageFiles.every(f => !f)) {
+    if (!message && _selectedImageFiles.length === 0) {
         showToast('Aviso', 'Digite uma mensagem ou selecione imagens antes de enviar', 'warning');
         return;
     }
@@ -100,38 +93,36 @@ async function sendWebhook() {
     const apiUrl = "https://webhook.fiqon.app/webhook/9fd68837-4f32-4ee3-a756-418a87beadc9/79c39a2c-225f-4143-9ca4-0d70fa92ee12";
 
     try {
-        // 1️⃣ Envia o texto
+        // 1️⃣ Envia o texto (uma vez só)
         if (message) {
             const textPayload = { message, timestamp: Date.now() };
-            const res = await fetch(apiUrl, {
+            await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(textPayload)
             });
-            console.log("Resposta texto:", await res.text());
             showToast('Sucesso', 'Texto enviado com sucesso!', 'success');
         }
 
-        // 2️⃣ Envia as imagens (cada uma separada)
-        for (let i = 0; i < _imageFiles.length; i++) {
-            const file = _imageFiles[i];
-            if (!file) continue;
-
+        // 2️⃣ Envia cada imagem em sequência
+        for (let file of _selectedImageFiles) {
             const imageUrl = await uploadToImgbb(file);
+
             const imagePayload = {
                 timestamp: Date.now(),
                 media: { url: imageUrl, filename: file.name }
             };
 
-            const res = await fetch(apiUrl, {
+            await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(imagePayload)
             });
-            console.log(`Resposta imagem ${i+1}:`, await res.text());
         }
 
-        showToast('Sucesso', 'Todas as imagens foram enviadas!', 'success');
+        if (_selectedImageFiles.length > 0) {
+            showToast('Sucesso', `${_selectedImageFiles.length} imagem(ns) enviada(s)!`, 'success');
+        }
     } catch (err) {
         console.error("Erro envio:", err);
         showToast('Erro', 'Falha no envio', 'error');
@@ -141,24 +132,43 @@ async function sendWebhook() {
     }
 }
 
+// ================== HELPERS ==================
+function showToast(title, message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️';
+    toast.innerHTML = `
+        <div class="toast-icon">${icon}</div>
+        <div class="toast-content">
+            <div class="toast-title">${title}</div>
+            <div class="toast-message">${message}</div>
+        </div>
+        <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+    `;
+    elements.toastContainer.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+}
+
 // ================== UPLOAD PARA IMGBB ==================
 const IMGBB_KEY = 'babc90a7ab9bddc78a89ebe1108ff464';
 
-function handleImageSelectedForImgBB(e, idx) {
-    const f = e.target.files && e.target.files[0];
-    if (!f) {
-        _imageFiles[idx] = null;
+function handleImagesSelectedForImgBB(e) {
+    const files = e.target.files;
+    if (!files || files.length === 0) {
+        _selectedImageFiles = [];
+        document.getElementById('imagePreview').style.display = 'none';
         return;
     }
 
-    if (f.size > 8 * 1024 * 1024) {
-        showToast('Aviso', 'Imagem muito grande. Máx 8MB.', 'warning');
-        e.target.value = '';
-        _imageFiles[idx] = null;
-        return;
-    }
+    _selectedImageFiles = Array.from(files);
 
-    _imageFiles[idx] = f;
+    // mostra preview da primeira imagem
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        document.getElementById('previewImg').src = ev.target.result;
+        document.getElementById('imagePreview').style.display = 'block';
+    };
+    reader.readAsDataURL(_selectedImageFiles[0]);
 }
 
 async function uploadToImgbb(file) {
