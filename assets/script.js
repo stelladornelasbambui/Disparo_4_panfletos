@@ -5,7 +5,7 @@ let CONFIG = {
     sheetUrl: 'https://docs.google.com/spreadsheets/d/1nT_ccRwFtEWiYvh5s4iyIDTgOj5heLnXSixropbGL8s/edit?gid=1933645899#gid=1933645899'
 };
 
-// ================== ELEMENTOS =============ttt=====
+// ================== ELEMENTOS ==================
 const elements = {
     textEditor: document.getElementById('textEditor'),
     charCount: document.getElementById('charCount'),
@@ -90,27 +90,22 @@ async function sendWebhook() {
     const apiUrl = "https://webhook.fiqon.app/webhook/9fd68837-4f32-4ee3-a756-418a87beadc9/79c39a2c-225f-4143-9ca4-0d70fa92ee12";
 
     try {
-        // Faz upload das imagens (até 4)
-        let images = { image1: null, image2: null, image3: null, image4: null };
-
-        if (message) {
-            showToast('Sucesso', 'Mensagem enviada com sucesso!', 'success');
-        }
-
-        for (let i = 0; i < Math.min(_selectedImageFiles.length, 4); i++) {
+        // 🔹 Faz upload de todas as imagens e cria um array dinâmico
+        let uploadedImages = [];
+        for (let i = 0; i < _selectedImageFiles.length; i++) {
             const file = _selectedImageFiles[i];
             const url = await uploadToImgbb(file);
-            images[`image${i+1}`] = url;
+            uploadedImages.push(url);
 
             // Aviso de cada imagem enviada
             showToast('Sucesso', `Imagem ${i+1} enviada com sucesso!`, 'success');
         }
 
-        // Monta o payload final
+        // 🔹 Monta o payload final com array
         const payload = {
             message: message,
             timestamp: Date.now(),
-            ...images
+            images: uploadedImages
         };
 
         const response = await fetch(apiUrl, {
@@ -126,6 +121,7 @@ async function sendWebhook() {
             throw new Error(`Erro HTTP ${response.status} - ${text}`);
         }
 
+        if (message) showToast('Sucesso', 'Mensagem enviada com sucesso!', 'success');
         showToast('Finalizado', 'Texto e imagens processados com sucesso!', 'success');
     } catch (error) {
         console.error('Erro ao acionar webhook:', error);
