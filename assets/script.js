@@ -1,4 +1,4 @@
-// ================== CONFIG ==========h========
+// ================== CONFIG ==================
 let CONFIG = {
     maxChars: 2000,
     sheetId: '1nT_ccRwFtEWiYvh5s4iyIDTgOj5heLnXSixropbGL8s',
@@ -90,32 +90,33 @@ async function sendWebhook() {
     const apiUrl = "https://webhook.fiqon.app/webhook/9fd68837-4f32-4ee3-a756-418a87beadc9/79c39a2c-225f-4143-9ca4-0d70fa92ee12";
 
     try {
-        // 1) Envia o texto primeiro
-        if (message) {
-            const payloadMsg = { message: message, timestamp: Date.now() };
-            await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payloadMsg)
-            });
-        }
+        // Faz upload das imagens (até 4)
+        let images = { image1: null, image2: null, image3: null, image4: null };
 
-        // 2) Faz upload e envia cada imagem separadamente
         for (let i = 0; i < Math.min(_selectedImageFiles.length, 4); i++) {
             const file = _selectedImageFiles[i];
             const url = await uploadToImgbb(file);
+            images[`image${i+1}`] = url;
+        }
 
-            const payloadImg = {
-                message: null, // sem legenda
-                timestamp: Date.now(),
-                media: { url: url, filename: file.name }
-            };
+        // Monta o payload final
+        const payload = {
+            message: message,
+            timestamp: Date.now(),
+            ...images
+        };
 
-            await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payloadImg)
-            });
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const text = await response.text();
+        console.log("Resposta do Webhook:", text);
+
+        if (!response.ok) {
+            throw new Error(`Erro HTTP ${response.status} - ${text}`);
         }
 
         showToast('Sucesso', 'Mensagem e imagens enviadas com sucesso!', 'success');
@@ -158,12 +159,23 @@ function handleImagesSelectedForImgBB(e) {
 
     _selectedImageFiles = Array.from(files);
 
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-        document.getElementById('previewImg').src = ev.target.result;
-        document.getElementById('imagePreview').style.display = 'block';
-    };
-    reader.readAsDataURL(_selectedImageFiles[0]);
+    // Previews no container
+    const container = document.getElementById('previewContainer');
+    container.innerHTML = "";
+    _selectedImageFiles.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const img = document.createElement('img');
+            img.src = ev.target.result;
+            img.style.maxWidth = "120px";
+            img.style.border = "1px solid #ddd";
+            img.style.margin = "5px";
+            container.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+    });
+
+    document.getElementById('imagePreview').style.display = 'block';
 }
 
 async function uploadToImgbb(file) {
