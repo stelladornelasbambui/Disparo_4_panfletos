@@ -104,7 +104,7 @@ async function sendWebhook() {
             showToast('Sucesso', 'Texto enviado com sucesso!', 'success');
         }
 
-        // 2️⃣ Envia todas as imagens em um único payload (sem texto repetido)
+        // 2️⃣ Envia todas as imagens em um único payload (sem campo message)
         if (_selectedImageFiles.length > 0) {
             const mediaArray = [];
             for (let file of _selectedImageFiles) {
@@ -118,7 +118,6 @@ async function sendWebhook() {
             }
 
             const imagePayload = {
-                message: null, // ⚡ null → não gera bolha de texto
                 timestamp: Date.now(),
                 media: mediaArray
             };
