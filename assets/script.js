@@ -1,4 +1,4 @@
-// ================== CONFIG ==========jjj========
+// ================== CONFIG ==================
 let CONFIG = {
     maxChars: 2000,
     sheetId: '1nT_ccRwFtEWiYvh5s4iyIDTgOj5heLnXSixropbGL8s',
@@ -37,7 +37,7 @@ function initializeEventListeners() {
         showToast('Sucesso', 'Abrindo planilha do Google Sheets...', 'success');
     });
 
-    // 👉 Atalhos de formatação
+    // 👉 Detectar teclas para formatação rápida
     elements.textEditor.addEventListener('keydown', handleFormatting);
 }
 
@@ -76,8 +76,8 @@ async function sendWebhook() {
     if (state.isSending) return;
 
     const message = elements.textEditor.innerText.trim();
-    if (!message && _selectedImageFiles.length === 0) {
-        showToast('Aviso', 'Digite uma mensagem ou selecione imagens', 'warning');
+    if (!message) {
+        showToast('Aviso', 'Digite uma mensagem antes de enviar', 'warning');
         return;
     }
 
@@ -87,35 +87,38 @@ async function sendWebhook() {
     const apiUrl = "https://webhook.fiqon.app/webhook/9fd68837-4f32-4ee3-a756-418a87beadc9/79c39a2c-225f-4143-9ca4-0d70fa92ee12";
 
     try {
-        // 1️⃣ Envia o texto apenas uma vez
-        if (message) {
-            const payloadText = { message, timestamp: Date.now() };
-            await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payloadText)
-            });
-        }
+        let media = null;
 
-        // 2️⃣ Envia cada imagem SEM mensagem
-        for (const file of _selectedImageFiles) {
-            const imageUrl = await uploadToImgbb(file);
-            const payloadImg = {
-                message: "", // não repete texto
-                timestamp: Date.now(),
-                media: {
-                    url: imageUrl,
-                    filename: file.name
-                }
+        // 👉 Se tiver imagem, faz upload para ImgBB
+        if (_selectedImageFile) {
+            const imageUrl = await uploadToImgbb(_selectedImageFile);
+            media = {
+                url: imageUrl,
+                filename: _selectedImageFile.name
             };
-            await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payloadImg)
-            });
         }
 
-        showToast('Sucesso', 'Mensagem e imagens enviadas!', 'success');
+        // 👉 Envia tudo em um único payload
+        const payload = {
+            message: message,  // vai como legenda da imagem
+            timestamp: Date.now(),
+            media: media
+        };
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const text = await response.text();
+        console.log("Resposta do Webhook:", text);
+
+        if (!response.ok) {
+            throw new Error(`Erro HTTP ${response.status} - ${text}`);
+        }
+
+        showToast('Sucesso', 'Mensagem enviada com sucesso!', 'success');
     } catch (error) {
         console.error('Erro ao acionar webhook:', error);
         showToast('Erro', 'Falha ao acionar webhook', 'error');
@@ -145,52 +148,45 @@ function showToast(title, message, type = 'success') {
 // ================== UPLOAD PARA IMGBB ==================
 const IMGBB_KEY = 'babc90a7ab9bddc78a89ebe1108ff464';
 
-let _selectedImageFiles = [];
+let _selectedImageFile = null;
 const imageInputEl = document.getElementById('imageInput');
 const imagePreviewEl = document.getElementById('imagePreview');
-const previewContainerEl = document.getElementById('previewContainer');
+const previewImgEl = document.getElementById('previewImg');
 
 if (imageInputEl) {
-    imageInputEl.addEventListener('change', handleImagesSelectedForImgBB);
+    imageInputEl.addEventListener('change', handleImageSelectedForImgBB);
 }
 
-function handleImagesSelectedForImgBB(e) {
-    const files = e.target.files;
-    _selectedImageFiles = [];
-    previewContainerEl.innerHTML = "";
-
-    if (!files || files.length === 0) {
-        imagePreviewEl.style.display = 'none';
+function handleImageSelectedForImgBB(e) {
+    const f = e.target.files && e.target.files[0];
+    if (!f) {
+        _selectedImageFile = null;
+        if (imagePreviewEl) { imagePreviewEl.style.display = 'none'; previewImgEl.src = ''; }
         return;
     }
 
-    Array.from(files).slice(0, 4).forEach(f => { // máximo 4
-        if (f.size > 8 * 1024 * 1024) {
-            showToast('Aviso', `Imagem muito grande (${f.name}). Máx 8MB.`, 'warning');
-            return;
-        }
-        _selectedImageFiles.push(f);
-
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            const img = document.createElement('img');
-            img.src = ev.target.result;
-            img.style.maxWidth = "100px";
-            img.style.border = "1px solid #ccc";
-            img.style.borderRadius = "8px";
-            previewContainerEl.appendChild(img);
-        };
-        reader.readAsDataURL(f);
-    });
-
-    if (_selectedImageFiles.length > 0) {
-        imagePreviewEl.style.display = 'block';
+    const maxMB = 8;
+    if (f.size > maxMB * 1024 * 1024) {
+        showToast('Aviso', `Imagem muito grande. Máximo ${maxMB} MB.`, 'warning');
+        imageInputEl.value = '';
+        _selectedImageFile = null;
+        if (imagePreviewEl) { imagePreviewEl.style.display = 'none'; previewImgEl.src = ''; }
+        return;
     }
+
+    _selectedImageFile = f;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        if (previewImgEl) { previewImgEl.src = ev.target.result; imagePreviewEl.style.display = 'block'; }
+    };
+    reader.readAsDataURL(f);
 }
 
 async function uploadToImgbb(file) {
     const base64 = await fileToBase64(file);
-    const pureBase64 = base64.split(',')[1];
+    const commaIndex = base64.indexOf(',');
+    const pureBase64 = commaIndex >= 0 ? base64.slice(commaIndex + 1) : base64;
 
     const form = new FormData();
     form.append('key', IMGBB_KEY);
@@ -207,7 +203,7 @@ async function uploadToImgbb(file) {
         throw new Error('Falha upload imgbb: ' + (JSON.stringify(json) || res.statusText));
     }
 
-    return json.data.display_url || json.data.url || (json.data.thumb && json.data.thumb.url);
+    return json.data.display_url || json.data.url || json.data.thumb.url;
 }
 
 function fileToBase64(file) {
