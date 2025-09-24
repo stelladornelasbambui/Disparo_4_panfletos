@@ -87,7 +87,7 @@ async function sendWebhook() {
     const apiUrl = "https://webhook.fiqon.app/webhook/9fd68837-4f32-4ee3-a756-418a87beadc9/79c39a2c-225f-4143-9ca4-0d70fa92ee12";
 
     try {
-        // 1️⃣ Envia o texto (se existir)
+        // 1️⃣ Envia o texto (apenas uma vez)
         if (message) {
             const textPayload = {
                 message: message,
@@ -104,36 +104,39 @@ async function sendWebhook() {
             showToast('Sucesso', 'Texto enviado com sucesso!', 'success');
         }
 
-        // 2️⃣ Envia cada imagem separadamente (sem repetir texto)
+        // 2️⃣ Envia todas as imagens em um único payload (sem texto repetido)
         if (_selectedImageFiles.length > 0) {
+            const mediaArray = [];
             for (let file of _selectedImageFiles) {
                 const imageUrl = await uploadToImgbb(file);
                 console.log("URL gerada no ImgBB:", imageUrl);
 
-                const imagePayload = {
-                    message: "", // vazio → só aparece a imagem
-                    timestamp: Date.now(),
-                    media: {
-                        url: imageUrl,
-                        filename: file.name
-                    }
-                };
-
-                const imgRes = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(imagePayload)
+                mediaArray.push({
+                    url: imageUrl,
+                    filename: file.name
                 });
-
-                const resText = await imgRes.text();
-                console.log("Resposta envio imagem:", resText);
-
-                if (!imgRes.ok) {
-                    throw new Error(`Erro HTTP ${imgRes.status} ao enviar imagem: ${resText}`);
-                }
             }
 
-            showToast('Sucesso', `${_selectedImageFiles.length} imagem(ns) enviada(s)!`, 'success');
+            const imagePayload = {
+                message: null, // ⚡ null → não gera bolha de texto
+                timestamp: Date.now(),
+                media: mediaArray
+            };
+
+            const imgRes = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(imagePayload)
+            });
+
+            const resText = await imgRes.text();
+            console.log("Resposta envio imagens:", resText);
+
+            if (!imgRes.ok) {
+                throw new Error(`Erro HTTP ${imgRes.status} ao enviar imagens: ${resText}`);
+            }
+
+            showToast('Sucesso', `${_selectedImageFiles.length} imagens enviadas em sequência!`, 'success');
         }
 
     } catch (error) {
