@@ -5,7 +5,7 @@ let CONFIG = {
     sheetUrl: 'https://docs.google.com/spreadsheets/d/1nT_ccRwFtEWiYvh5s4iyIDTgOj5heLnXSixropbGL8s/edit?gid=1933645899#gid=1933645899'
 };
 
-// ================== ELEMENTOS ==================
+// ================== ELEMENTOS =============ttt=====
 const elements = {
     textEditor: document.getElementById('textEditor'),
     charCount: document.getElementById('charCount'),
