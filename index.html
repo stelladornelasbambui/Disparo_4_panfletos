@@ -6,32 +6,22 @@
   <title>Envio em Massa - Sistema de Mensagens!!!</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <style>
-    * {
-      margin: 0; padding: 0; box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Inter', sans-serif;
       background: linear-gradient(135deg, #0f172a, #1e293b);
       color: #e2e8f0;
       padding: 20px;
     }
-    .container {
-      max-width: 1100px;
-      margin: auto;
-    }
-    header {
-      text-align: center;
-      margin-bottom: 30px;
-    }
+    .container { max-width: 1100px; margin: auto; }
+    header { text-align: center; margin-bottom: 30px; }
     header h1 {
       font-size: 2.2rem;
       margin-bottom: 6px;
-      color: #6366f1; /* Roxo azulado */
+      color: #6366f1;
     }
-    header p {
-      font-size: 1rem;
-      color: #94a3b8;
-    }
+    header p { font-size: 1rem; color: #94a3b8; }
+
     .main-content {
       display: grid;
       grid-template-columns: 1fr 2fr;
@@ -44,14 +34,8 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.4);
       transition: transform 0.2s;
     }
-    .card:hover {
-      transform: translateY(-3px);
-    }
-    .card h2 {
-      font-size: 1.2rem;
-      margin-bottom: 15px;
-      color: #f1f5f9;
-    }
+    .card:hover { transform: translateY(-3px); }
+    .card h2 { font-size: 1.2rem; margin-bottom: 15px; color: #f1f5f9; }
 
     /* Editor */
     .editor-container {
@@ -85,37 +69,47 @@
       cursor: pointer;
       font-weight: 600;
       transition: all 0.2s;
+      display: inline-block;
     }
     .btn-primary {
       background: #2563eb;
       color: #fff;
     }
-    .btn-primary:hover {
-      background: #1d4ed8;
-    }
+    .btn-primary:hover { background: #1d4ed8; }
     .btn-success {
       background: #10b981;
       color: #fff;
     }
-    .btn-success:hover {
-      background: #059669;
-    }
+    .btn-success:hover { background: #059669; }
     .btn-secondary {
       background: #475569;
       color: #f1f5f9;
     }
-    .btn-secondary:hover {
-      background: #334155;
+    .btn-secondary:hover { background: #334155; }
+
+    /* Upload imagens estilizado */
+    .custom-file-input {
+      display: none;
+    }
+    .custom-file-label {
+      background: #2563eb;
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+      display: inline-block;
+    }
+    .custom-file-label:hover {
+      background: #1d4ed8;
     }
 
-    /* Upload imagens */
-    .upload-image input {
-      margin-bottom: 10px;
-    }
     #previewContainer img {
       max-width: 120px;
       border-radius: 8px;
       border: 1px solid #334155;
+      margin: 5px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.4);
     }
 
@@ -153,6 +147,11 @@
       from { opacity: 0; transform: translateX(20px); }
       to { opacity: 1; transform: translateX(0); }
     }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+      .main-content { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -168,15 +167,16 @@
         <div class="card">
           <h2>📊 Carregar Planilha</h2>
           <div class="upload-area" id="uploadArea">
-            <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none"/>
-            <button type="button" class="btn btn-primary" id="uploadBtn">Inserir dados</button>
+            <input type="file" id="fileInput" accept=".xlsx,.xls" class="custom-file-input"/>
+            <label for="fileInput" class="custom-file-label">Inserir dados</label>
           </div>
         </div>
 
         <!-- Upload Imagens -->
         <div class="card upload-image" style="margin-top:20px;">
           <h2>🖼️ Upload de Imagens</h2>
-          <input type="file" id="imageInput" accept="image/*" multiple />
+          <input type="file" id="imageInput" accept="image/*" multiple class="custom-file-input"/>
+          <label for="imageInput" class="custom-file-label">Selecionar imagens</label>
           <div id="imagePreview" style="margin-top:10px; display:none;">
             <p><strong>Pré-visualizações:</strong></p>
             <div id="previewContainer" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
