@@ -87,7 +87,7 @@ async function sendWebhook() {
     state.isSending = true;
     elements.sendBtn.disabled = true;
 
-    const apiUrl = "https://webhook.fiqon.app/webhook/9fd68837-4f32-4ee3-a756-418a87beadc9/79c39a2c-225f-4143-9ca4-0d70fa92ee12";
+    const apiUrl = "https://webhook.fiqon.app/webhook/9ff6dd7e-cbc9-4514-ad04-182d4b2110fe/62b66d44-787e-4a18-a4d1-fe886afb16c0";
 
     try {
         // Faz upload das imagens (até 4)
